@@ -1,0 +1,9 @@
+*.FCStd binary
+*.stl binary
+*.png binary
+*.jpg binary
+*.pdf binary
+*.zip binary
+*.csv whitespace=cr-at-eol
+hardware/pcb/gerbers/* -text
+hardware/pcb/source/* -text

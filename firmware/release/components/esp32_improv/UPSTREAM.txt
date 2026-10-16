@@ -1,0 +1,5 @@
+ESPHome 2026.9.1 esp32_improv
+Source: https://github.com/esphome/esphome/tree/2026.9.1/esphome/components/esp32_improv
+Python MIT; C++ GPLv3, see LICENSE.
+LabSense modifications: setup-window gating, bounded credential payloads, no credential logging.
+LabSense rc3: require portal key acknowledgement before BLE authorization/credential submission.

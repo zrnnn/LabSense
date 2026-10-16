@@ -1,0 +1,594 @@
+# ESPHome 2026.9.1. Hardware: Seeed XIAO ESP32C3 / The LAB carrier.
+# No Home Assistant action/service calls or HA configuration changes.
+# VOC thresholds below are technical indicators, NOT health/exposure limits.
+substitutions:
+  device_name: labsense
+  friendly_name: LabSense
+  # The public image generates a random key separately on each device.
+  setup_ssid: LabSense setup
+  # Set false for a new sensor that has not completed its initial conditioning.
+  sensor_preconditioned: "false"
+  warning_delay_ms: "120000"
+  high_delay_ms: "30000"
+  clear_delay_ms: "300000"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: true
+  min_version: 2026.9.1
+  includes:
+    - voc_monitor.h
+    - wifi_health.h
+    - runtime_pairing.h
+    - commissioning_policy.h
+    - oled_ui.h
+    - oled_canvas.h
+    - display_settings.h
+  project:
+    name: labsense.room_sensor
+    version: "1.3.0-rc6"
+  on_boot:
+    # Explicit SSID broadcasting; the AP YAML schema has no hidden flag.
+    - priority: 400
+      then:
+        - lambda: |-
+            lab::load_display_settings();
+            lab::configure_setup_ap();
+    # I2C is initialized before the BME/OLED components set themselves up.
+    - priority: 650
+      then:
+        - lambda: |-
+            uint8_t found_id=0, found_address=0x76;
+            for (uint8_t address : {uint8_t(0x76),uint8_t(0x77)}) {
+              id(bme_chip).set_i2c_address(address);
+              uint8_t chip=0;
+              if (static_cast<esphome::i2c::I2CDevice *>(id(bme_chip))->read_byte(0xD0,&chip)) {
+                found_id=chip; found_address=address;
+                if (chip==0x60) break;
+              }
+            }
+            id(bme_chip).set_i2c_address(found_address);
+            id(bme_observed_id)=found_id;
+            id(bme_observed_address)=found_address;
+            uint8_t ccs_id=0;
+            if (static_cast<esphome::i2c::I2CDevice *>(id(gas_chip))->read_byte(0x20,&ccs_id))
+              id(ccs_observed_id)=ccs_id;
+            ESP_LOGI("startup","Sensor IDs: BME=0x%02X CCS=0x%02X",id(bme_observed_id),id(ccs_observed_id));
+            id(oled).set_i2c_address(0x3C);
+            if (id(oled).write(nullptr,0)!=esphome::i2c::ERROR_OK)
+              id(oled).set_i2c_address(0x3D);
+    - priority: 50
+      then:
+        - lambda: lab::ensure_pairing_key();
+    - priority: -100
+      then:
+        - lambda: |-
+            id(ui_started)=uint64_t(esp_timer_get_time())/1000ULL;
+            lab::ble_window().store(!id(wifi_seen) || lab::physical_pairing().load());
+            if (lab::ble_setup_allowed()) id(ble_setup).start();
+            lab::monitor().begin((${sensor_preconditioned} || id(conditioned)) ? 1200000UL : 172800000UL);
+            id(baseline_status).publish_state(id(baseline_valid) ? "Restore pending after warm-up" : "No saved baseline; automatic learning");
+        - delay: 8s
+        - lambda: |-
+            id(oled).stop_poller();
+            id(oled).set_update_interval(1000);
+            id(oled).start_poller();
+
+esp32:
+  variant: esp32c3
+  flash_size: 4MB
+  cpu_frequency: 80MHz
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+  hardware_uart: USB_SERIAL_JTAG
+
+preferences:
+  flash_write_interval: 1min
+
+api:
+  encryption:
+  # Local measurement must continue without a Home Assistant connection.
+  reboot_timeout: 0s
+
+# No home-network password is embedded. Provision via the protected setup AP
+# or Improv BLE; saved Wi-Fi credentials survive subsequent OTA updates.
+wifi:
+  id: wifi_link
+  enable_on_boot: true
+  power_save_mode: NONE
+  reboot_timeout: 0s
+  on_connect:
+    then:
+      - lambda: |
+          id(wifi_seen) = true;
+          lab::ble_window().store(false);
+          lab::physical_pairing().store(false);
+          lab::persist_recovery(false);
+  ap:
+    ssid: ${setup_ssid}
+    channel: 6
+    password: "replaced-before-radio-start"
+    ap_timeout: 10s
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [captive_portal, labsense_security, esp32_improv]
+
+esp32_ble:
+  name: LabSense
+esp32_improv:
+  id: ble_setup
+  authorizer: none
+  wifi_timeout: 10s
+
+captive_portal:
+  compression: gzip
+labsense_security:
+ota:
+  - platform: esphome
+    id: encrypted_updates
+safe_mode:
+  disabled: true
+mdns:
+  disabled: false
+
+i2c:
+  id: sensor_bus
+  sda: GPIO6
+  scl: GPIO7
+  frequency: 100kHz
+  timeout: 13ms
+  scan: true
+
+globals:
+  - id: ui_started
+    type: uint64_t
+    initial_value: '0'
+  - id: ccs_observed_id
+    type: uint8_t
+    initial_value: '0'
+  - id: wifi_seen
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+  - id: conditioned
+    type: bool
+    restore_value: true
+    initial_value: '${sensor_preconditioned}'
+  - id: saved_baseline
+    type: uint16_t
+    restore_value: true
+    initial_value: '0'
+  - id: baseline_valid
+    type: bool
+    restore_value: true
+    initial_value: 'false'
+  - id: baseline_restored
+    type: bool
+    initial_value: 'false'
+  - id: baseline_restore_problem
+    type: bool
+    initial_value: 'false'
+  - id: last_baseline_attempt
+    type: uint32_t
+    initial_value: '0'
+  - id: last_temperature_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: last_humidity_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: bme_observed_id
+    type: uint8_t
+    initial_value: '0'
+  - id: bme_observed_address
+    type: uint8_t
+    initial_value: '0'
+
+select:
+  - platform: template
+    id: screen_orientation
+    name: Display orientation
+    entity_category: config
+    options: [USB left, USB bottom, USB right, USB top]
+    update_interval: 1s
+    lambda: return std::string(lab::rotation_name(lab::display_rotation().load()));
+    set_action:
+      - lambda: |-
+          const int degrees=x=="USB bottom"?90:x=="USB right"?180:x=="USB top"?270:0;
+          if (lab::save_display_rotation(degrees)) id(screen_orientation).publish_state(x);
+
+number:
+  - platform: template
+    id: warning_threshold
+    name: VOC elevated threshold
+    entity_category: config
+    unit_of_measurement: ppb
+    min_value: 50
+    max_value: 10000
+    step: 50
+    initial_value: 500
+    restore_value: true
+    optimistic: true
+    mode: box
+  - platform: template
+    id: high_threshold
+    name: VOC high threshold
+    entity_category: config
+    unit_of_measurement: ppb
+    min_value: 100
+    max_value: 30000
+    step: 50
+    # Practical high indication; not a health or exposure limit.
+    initial_value: 2000
+    restore_value: true
+    optimistic: true
+    mode: box
+  - platform: template
+    id: temperature_offset
+    name: Temperature display offset
+    entity_category: config
+    unit_of_measurement: "°C"
+    min_value: -10
+    max_value: 10
+    step: 0.1
+    initial_value: 0
+    restore_value: true
+    optimistic: true
+    mode: box
+
+sensor:
+  - platform: bme280_i2c
+    id: bme_chip
+    i2c_id: sensor_bus
+    address: 0x76
+    update_interval: 10s
+    iir_filter: "OFF"
+    temperature:
+      id: temperature_raw
+      internal: true
+      oversampling: 2x
+      on_raw_value:
+        then:
+          - lambda: |-
+              if (std::isfinite(x)) id(last_temperature_ms)=millis();
+    humidity:
+      id: humidity_raw
+      internal: true
+      oversampling: 1x
+      on_raw_value:
+        then:
+          - lambda: |-
+              if (std::isfinite(x)) id(last_humidity_ms)=millis();
+    pressure:
+      name: Pressure
+      id: air_pressure
+      oversampling: 4x
+      filters:
+        - timeout: 60s
+
+  - platform: ccs811
+    id: gas_chip
+    i2c_id: sensor_bus
+    address: 0x5A
+    update_interval: 1s
+    temperature: temperature_raw
+    humidity: humidity_raw
+    eco2:
+      id: eco2_raw
+      internal: true
+    tvoc:
+      id: tvoc_raw
+      internal: true
+      on_raw_value:
+        then:
+          - lambda: |-
+              const float eco2=id(eco2_raw).state;
+              lab::monitor().sample(millis(),std::isfinite(eco2) && eco2>=400 && eco2<=29206 ? x : NAN);
+    version:
+      name: CCS811 Firmware
+      entity_category: diagnostic
+
+  - platform: template
+    name: Temperature
+    id: room_temperature
+    device_class: temperature
+    state_class: measurement
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      if (id(bme_chip).is_failed() || !id(last_temperature_ms) || uint32_t(millis()-id(last_temperature_ms))>60000) return NAN;
+      return id(temperature_raw).state+id(temperature_offset).state;
+  - platform: template
+    name: Relative humidity
+    id: room_humidity
+    device_class: humidity
+    state_class: measurement
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      if (id(bme_chip).is_failed() || !id(last_humidity_ms) || uint32_t(millis()-id(last_humidity_ms))>60000) return NAN;
+      return id(humidity_raw).state;
+  - platform: template
+    name: VOC estimate
+    id: voc_value
+    device_class: volatile_organic_compounds_parts
+    state_class: measurement
+    unit_of_measurement: ppb
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: |-
+      return lab::monitor().fresh(millis()) ? lab::monitor().value() : NAN;
+  - platform: template
+    name: eCO2 VOC-based
+    id: eco2_value
+    state_class: measurement
+    unit_of_measurement: ppm
+    accuracy_decimals: 0
+    icon: mdi:molecule-co2
+    update_interval: 5s
+    lambda: |-
+      return lab::monitor().fresh(millis()) ? id(eco2_raw).state : NAN;
+  - platform: template
+    name: VOC sample age
+    entity_category: diagnostic
+    unit_of_measurement: s
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: |-
+      return lab::monitor().age(millis())==UINT32_MAX ? NAN : lab::monitor().age(millis())/1000.0f;
+  - platform: template
+    name: VOC warm-up remaining
+    id: warmup_seconds
+    entity_category: diagnostic
+    unit_of_measurement: s
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: return lab::monitor().remaining(millis())/1000.0f;
+  - platform: wifi_signal
+    name: Wi-Fi signal
+    entity_category: diagnostic
+    update_interval: 60s
+  - platform: uptime
+    name: Uptime
+    entity_category: diagnostic
+    update_interval: 60s
+
+binary_sensor:
+  - platform: gpio
+    id: setup_button
+    internal: true
+    pin:
+      number: GPIO9
+      mode: INPUT_PULLUP
+      inverted: true
+      ignore_strapping_warning: true
+    filters:
+      - delayed_on: 8s
+      - delayed_off: 50ms
+    on_press:
+      then:
+        - lambda: lab::recovery_armed().store(true);
+    on_release:
+      then:
+        - lambda: |-
+            if (lab::recovery_armed().exchange(false)) lab::request_recovery();
+  - platform: template
+    id: voc_warning
+    name: VOC elevated
+    device_class: problem
+  - platform: template
+    id: voc_high
+    name: VOC high
+    device_class: problem
+  - platform: template
+    id: measurement_ready
+    name: VOC evaluation ready
+    entity_category: diagnostic
+  - platform: template
+    id: evaluation_unavailable
+    name: VOC evaluation unavailable
+    device_class: problem
+  - platform: template
+    id: sensor_fault
+    name: Sensor fault
+    device_class: problem
+  - platform: template
+    id: compensation_valid
+    name: VOC compensation valid
+    entity_category: diagnostic
+  - platform: template
+    name: VOC baseline saved
+    entity_category: diagnostic
+    lambda: return id(baseline_valid);
+  - platform: status
+    name: Connection
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: template
+    id: baseline_status
+    name: VOC baseline status
+    entity_category: diagnostic
+    update_interval: never
+  - platform: template
+    id: air_status
+    name: Air quality status
+    update_interval: never
+  - platform: template
+    name: BME chip identity
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      char info[64];
+      snprintf(info,sizeof(info),"ID 0x%02X @ 0x%02X%s",id(bme_observed_id),id(bme_observed_address),id(bme_observed_id)==0x60 ? " BME280" : " NO BME280 detected");
+      return std::string(info);
+  - platform: wifi_info
+    ip_address:
+      name: IP address
+      entity_category: diagnostic
+
+switch:
+  - platform: template
+    id: display_enabled
+    name: Display enabled
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+
+button:
+  - platform: restart
+    name: Restart
+    entity_category: config
+  - platform: template
+    name: Save VOC baseline after ventilation
+    entity_category: config
+    on_press:
+      then:
+        - lambda: |-
+            if (!lab::monitor().ready() || lab::monitor().warning() || lab::monitor().value()>=id(warning_threshold).state) {
+              id(baseline_status).publish_state("Save rejected: ventilate and wait for warm-up");
+              ESP_LOGW("air","Baseline not saved: ventilate, wait for warm-up and check status.");
+              return;
+            }
+            uint8_t bytes[2];
+            if (id(gas_chip).read_bytes(0x11,bytes,2)) {
+              id(saved_baseline)=(uint16_t(bytes[0])<<8)|bytes[1];
+              id(baseline_valid)=true;
+              id(baseline_status).publish_state("Saved for next startup");
+              ESP_LOGI("air","Baseline saved for future restarts; not proof of clean air.");
+            } else id(baseline_status).publish_state("Baseline read failed");
+        - delay: 2s
+        - lambda: esphome::global_preferences->sync();
+  - platform: template
+    name: Discard saved VOC baseline
+    entity_category: config
+    on_press:
+      then:
+        - lambda: |-
+            id(baseline_valid)=false;
+            id(saved_baseline)=0;
+            id(baseline_status).publish_state("Saved baseline discarded; restart to recondition");
+        - delay: 2s
+        - lambda: esphome::global_preferences->sync();
+
+interval:
+  - interval: 250ms
+    then:
+      - lambda: |-
+          const int rotation=lab::requested_rotation().exchange(-1);
+          if (lab::valid_rotation(rotation) && lab::save_display_rotation(rotation))
+            id(screen_orientation).publish_state(lab::rotation_name(rotation));
+  - interval: 10s
+    then:
+      - lambda: lab_wifi_boot_report();
+  - interval: 1s
+    then:
+      - lambda: |-
+          const uint32_t now=millis();
+          lab::monitor().configure(id(warning_threshold).state,id(high_threshold).state,${warning_delay_ms}UL,${high_delay_ms}UL,${clear_delay_ms}UL);
+          const bool compensation=!id(bme_chip).is_failed() && id(last_temperature_ms) && id(last_humidity_ms) &&
+            uint32_t(now-id(last_temperature_ms))<=60000 && uint32_t(now-id(last_humidity_ms))<=60000 &&
+            std::isfinite(id(temperature_raw).state) && id(temperature_raw).state>=-25 && id(temperature_raw).state<=50 &&
+            std::isfinite(id(humidity_raw).state) && id(humidity_raw).state>=0 && id(humidity_raw).state<=100;
+          uint8_t status=0;
+          const bool status_read=!id(gas_chip).is_failed() && id(gas_chip).read_byte(0x00,&status);
+          // A transient NACK is handled by sample freshness; ERROR/FW_MODE is checked immediately.
+          const bool hardware_ok=!id(gas_chip).is_failed() && (!status_read || ((status&0x81)==0x80));
+          if (id(baseline_valid) && !id(baseline_restored) && hardware_ok && compensation &&
+              lab::monitor().conditioning_elapsed(now)>=1200000UL &&
+              (id(last_baseline_attempt)==0 || uint32_t(now-id(last_baseline_attempt))>=30000)) {
+            id(last_baseline_attempt)=now;
+            const uint8_t data[2]={uint8_t(id(saved_baseline)>>8),uint8_t(id(saved_baseline)&0xff)};
+            const bool written=id(gas_chip).write_bytes(0x11,data,2);
+            id(baseline_restore_problem)=!written;
+            if (written) {
+              id(baseline_restored)=true; lab::monitor().settle(now,60000);
+              id(baseline_status).publish_state("Restored; stabilizing for 60 s");
+            } else id(baseline_status).publish_state("Restore failed");
+          }
+          lab::monitor().tick(now,hardware_ok,compensation,!id(baseline_restore_problem));
+          if (lab::monitor().ready()) id(conditioned)=true;
+          id(measurement_ready).publish_state(lab::monitor().ready());
+          id(evaluation_unavailable).publish_state(!lab::monitor().ready());
+          id(compensation_valid).publish_state(compensation);
+          const auto state=lab::monitor().state();
+          id(sensor_fault).publish_state(state==lab::AirState::SENSOR_FAULT || state==lab::AirState::COMPENSATION_FAULT || state==lab::AirState::CONFIG_FAULT);
+          if (lab::monitor().ready()) {
+            id(voc_warning).publish_state(lab::monitor().warning());
+            id(voc_high).publish_state(lab::monitor().high());
+          } else {
+            // Unknown, never false/"all clear", when a reading cannot be assessed.
+            if (id(voc_warning).has_state()) id(voc_warning).invalidate_state();
+            if (id(voc_high).has_state()) id(voc_high).invalidate_state();
+          }
+          const std::string label=lab::monitor().label();
+          if (!id(air_status).has_state() || id(air_status).state!=label) id(air_status).publish_state(label);
+
+font:
+  - file: fonts/LiberationSans-Regular.ttf
+    id: font_small
+    size: 10
+    glyphsets: [GF_Latin_Core]
+  - file: fonts/LiberationSans-Regular.ttf
+    id: font_label
+    size: 16
+    glyphsets: [GF_Latin_Core]
+  - file: fonts/LiberationSans-Regular.ttf
+    id: font_value
+    size: 44
+    glyphs: "0123456789-"
+  - file: fonts/LiberationSans-Regular.ttf
+    id: font_compact
+    size: 30
+    glyphs: "0123456789-"
+  - file: fonts/LiberationSans-Regular.ttf
+    id: font_climate
+    size: 18
+    glyphs: "0123456789.-"
+
+display:
+  - platform: ssd1306_i2c
+    id: oled
+    i2c_id: sensor_bus
+    model: SSD1306 128x64
+    address: 0x3C
+    rotation: 0
+    contrast: 0.35
+    # Smooth boot sequence only; on_boot reduces this to 1 Hz after 8 seconds.
+    update_interval: 250ms
+    lambda: |-
+      it.set_rotation(static_cast<esphome::display::DisplayRotation>(lab::display_rotation().load()));
+      lab::ui::Model view;
+      view.portrait=it.get_width()==64;
+      view.now=uint64_t(esp_timer_get_time())/1000ULL;view.started=id(ui_started);
+      view.warmup_ms=lab::monitor().remaining(uint32_t(view.now));
+      view.display_enabled=id(display_enabled).state;
+      view.recovery_armed=lab::recovery_armed().load();
+      view.setup=id(wifi_link).is_ap_active() && (!id(wifi_seen) || lab::physical_pairing().load());
+      view.key_saved=lab::key_acknowledged().load();
+      view.wifi=id(wifi_link).is_connected();
+      view.api=esphome::api::global_api_server && esphome::api::global_api_server->is_connected();
+      view.ap=id(wifi_link).is_ap_active();
+      view.bme_id_ok=id(bme_observed_id)==0x60;view.ccs_id_ok=id(ccs_observed_id)==0x81;
+      view.bme_failed=id(bme_chip).is_failed();view.ccs_failed=id(gas_chip).is_failed();
+      view.gas_fresh=lab::monitor().fresh(uint32_t(view.now));
+      view.voc=lab::monitor().value();
+      const auto state=lab::monitor().state();
+      view.air=lab::ui::assessed_air(lab::monitor().ready(),state==lab::AirState::SENSOR_FAULT,
+        state==lab::AirState::COMPENSATION_FAULT,state==lab::AirState::CONFIG_FAULT,
+        lab::monitor().high(),lab::monitor().warning(),view.voc,
+        id(warning_threshold).state,id(high_threshold).state);
+      view.temperature=id(room_temperature).state;view.humidity=id(room_humidity).state;
+      const auto ap=id(wifi_link).get_ap();
+      view.ssid=ap.get_ssid().c_str();view.password=ap.get_password().c_str();
+      lab::ui::OledCanvas canvas{it,id(font_small),id(font_label),id(font_value),id(font_compact),id(font_climate)};
+      lab::ui::render(canvas,view);

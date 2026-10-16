@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>LabSense setup</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100svh;display:grid;place-items:center;padding:24px;background:#F4F7F2;color:#142B28;font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.card{width:100%;max-width:380px;padding:30px 26px;background:#fff;border:1px solid #e4e7e2;border-radius:18px}h1{margin:0 0 30px;font-size:27px;line-height:1.15;letter-spacing:-.6px;font-weight:650}.label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}label{font-size:14px;font-weight:600}.refresh{border:0;background:none;color:#587166;font:14px system-ui;padding:4px 0;cursor:pointer}select,input{width:100%;height:50px;border:1px solid #d4d9d3;border-radius:10px;background:#fff;color:#142B28;font:16px system-ui;padding:0 13px;outline:none}select{padding-right:28px}input:focus,select:focus{border-color:#378060;box-shadow:0 0 0 3px #37806014}.field{margin-bottom:22px}.password{position:relative}.password input{padding-right:67px}.show{position:absolute;right:4px;top:4px;height:42px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:#587166;font:14px system-ui;cursor:pointer}.pairing{padding:19px 0 4px;margin:0 0 22px;border-bottom:1px solid #e4e7e2}.key{display:block;width:100%;margin:8px 0 11px;padding:11px 12px;border-radius:10px;background:#f4f6f3;font:13px/1.5 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere;user-select:all}.key-actions{display:flex;gap:9px;flex-wrap:wrap}.key-actions button{border:1px solid #cdd6cc;border-radius:9px;background:#fff;color:#142B28;padding:9px 13px;font:600 14px system-ui;cursor:pointer}.hint{font-size:13px;color:#657167;margin:9px 0 0}.connect{width:100%;height:50px;margin-top:4px;border:0;border-radius:10px;background:#142B28;color:#fff;font:600 16px system-ui;cursor:pointer}.connect:disabled{opacity:.55;cursor:default}.status{margin:15px 0 0;font-size:14px;color:#587166}.status.error{color:#a13a2e}[hidden]{display:none!important}button:focus-visible{outline:3px solid #91b89a;outline-offset:3px}input:disabled{background:#f7f8f5;color:#90968f}@media(max-width:360px){body{padding:16px}.card{padding:26px 20px}}
+</style>
+</head>
+<body>
+<main class="card">
+<h1>LabSense setup</h1>
+<section class="pairing" aria-label="Home Assistant pairing"><label for="key">Home Assistant key</label><output id="key" class="key">Preparing your key…</output><div class="key-actions"><button id="copy-key" type="button" disabled>Copy key</button><button id="save-key" type="button" disabled>Save image</button><button id="confirm-key" type="button" hidden>I copied it</button></div><p class="hint">1. Copy or save this key. 2. Connect below, or continue Bluetooth setup in Home Assistant.</p></section>
+<form id="setup" autocomplete="off">
+<div class="field">
+<div class="label-row"><label for="network">Wi-Fi network</label><button id="refresh" class="refresh" type="button">Refresh</button></div>
+<select id="network" required><option value="" disabled selected>Finding networks…</option></select>
+</div>
+<div id="manual-field" class="field" hidden>
+<div class="label-row"><label for="ssid">Wi-Fi name</label></div>
+<input id="ssid" name="ssid" maxlength="32" autocapitalize="none" spellcheck="false">
+</div>
+<div class="field">
+<div class="label-row"><label for="password">Password</label></div>
+<div class="password"><input id="password" type="password" maxlength="64" autocapitalize="none" spellcheck="false" autocomplete="off"><button id="show" class="show" type="button" aria-controls="password" aria-pressed="false">Show</button></div>
+</div>
+<button id="connect" class="connect" type="submit">Connect</button>
+<details style="margin-top:20px"><summary>Display settings</summary><div class="field" style="margin-top:16px"><div class="label-row"><label for="orientation">USB port position</label></div><select id="orientation" disabled><option value="0">Left — default</option><option value="90">Bottom — 90° clockwise</option><option value="180">Right — 180°</option><option value="270">Top — 270° clockwise</option></select><p id="orientation-status" class="hint" role="status" aria-live="polite"></p></div></details>
+<p id="status" class="status" role="status" aria-live="polite" hidden></p>
+</form>
+</main>
+<script>
+'use strict';
+const network=document.getElementById('network'),password=document.getElementById('password'),manual=document.getElementById('manual-field'),ssidInput=document.getElementById('ssid'),connect=document.getElementById('connect'),status=document.getElementById('status'),refresh=document.getElementById('refresh'),show=document.getElementById('show');
+const keyField=document.getElementById('key'),copyKeyButton=document.getElementById('copy-key'),saveKeyButton=document.getElementById('save-key');
+let networks=new Map(),loading=false,busy=false,scanRetry,pairingKey='';
+const orientation=document.getElementById('orientation'),orientationStatus=document.getElementById('orientation-status');
+let savedOrientation='0';
+async function loadOrientation(){try{const data=await(await request('/config.json')).json();if(![0,90,180,270].includes(data.display_rotation))throw Error('orientation');savedOrientation=String(data.display_rotation);orientation.value=savedOrientation;orientation.disabled=false;orientationStatus.textContent=''}catch(e){orientationStatus.textContent='Loading display settings…';setTimeout(loadOrientation,2500)}}
+orientation.addEventListener('change',async()=>{orientation.disabled=true;orientationStatus.textContent='Saving…';const value=orientation.value;try{await request('/display',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','X-LabSense-Setup':'1'},body:new URLSearchParams({rotation:value}).toString()});let confirmed=false;for(let i=0;i<6;i++){await new Promise(resolve=>setTimeout(resolve,350));const data=await(await request('/config.json')).json();if(String(data.display_rotation)===value){confirmed=true;break}}if(!confirmed)throw Error('not saved');savedOrientation=value;orientationStatus.textContent='Saved'}catch(e){orientation.value=savedOrientation;orientationStatus.textContent='Could not save. Please try again.'}finally{orientation.disabled=false}});
+function message(text,error=false){status.textContent=text;status.classList.toggle('error',error);status.hidden=!text}
+function selectionChanged(){const other=network.value==='other';manual.hidden=!other;ssidInput.required=other;const item=networks.get(network.value);password.disabled=!other&&!!item&&!item.lock;password.required=other||!!(item&&item.lock);if(password.disabled)password.value='';message('')}
+async function request(url,options={}){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),7000);try{const response=await fetch(url,{...options,cache:'no-store',signal:controller.signal});if(!response.ok){const error=Error('request');error.status=response.status;throw error;}return response}finally{clearTimeout(timer)}}
+function renderNetworks(data,previous){
+ const list=data.aps.filter(ap=>typeof ap.ssid==='string'&&ap.ssid.length).sort((a,b)=>(b.rssi??-100)-(a.rssi??-100));
+ networks=new Map();for(const ap of list){const key='known:'+ap.ssid;if(!networks.has(key))networks.set(key,ap)}
+ network.replaceChildren(new Option(networks.size?'Choose your Wi-Fi':'No networks found','',true,true));network.options[0].disabled=true;
+ for(const [key,ap] of networks)network.add(new Option(ap.ssid,key));network.add(new Option('Other network…','other'));
+ if(previous==='other'||networks.has(previous))network.value=previous;selectionChanged();
+}
+async function loadNetworks(){
+ if(loading||busy)return;loading=true;refresh.disabled=true;clearTimeout(scanRetry);const previous=network.value;
+ if(!networks.size)network.replaceChildren(new Option('Finding networks…','',true,true),new Option('Other network…','other'));
+ try{
+  try{await request('/scan',{method:'POST',headers:{'X-LabSense-Setup':'1','Content-Type':'application/x-www-form-urlencoded'},body:'scan=1'})}catch(e){/* Still show already-discovered networks if a refresh request fails. */}
+  const deadline=Date.now()+35000;let data;
+  while(true){
+   if(busy)return;
+   data=await(await request('/config.json')).json();if(busy)return;if(!Array.isArray(data.aps)||!data.scan)throw Error('scan');
+   if(data.aps.some(ap=>typeof ap.ssid==='string'&&ap.ssid.length))renderNetworks(data,network.value==='other'?'other':(network.value||previous));
+   if(!data.scan.pending)break;
+   if(Date.now()>=deadline)throw Error('scan timeout');
+   await new Promise(resolve=>setTimeout(resolve,900));
+  }
+  renderNetworks(data,network.value==='other'?'other':previous);
+  if(data.scan.error)message('Wi-Fi search failed. Tap Refresh to try again.',true);
+  else if(!networks.size){message('No 2.4 GHz networks found. Tap Refresh to search again.',true);scanRetry=setTimeout(loadNetworks,15000)}
+ }catch(e){message(networks.size?'Choose a network, or tap Refresh to search again.':'Wi-Fi search is taking longer. Tap Refresh to try again.',!networks.size);if(!network.querySelector('option[value="other"]'))network.add(new Option('Other network…','other'))}
+ finally{loading=false;refresh.disabled=false}
+}
+async function confirmSavedKey(){
+ const params=new URLSearchParams({key:pairingKey});
+ await request('/pairing/confirm',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','X-LabSense-Setup':'1'},body:params.toString()});
+ connect.disabled=false;message('Key saved. Choose Wi-Fi below or continue in Home Assistant.');
+}
+async function loadKey(){try{const data=await(await request('/pairing.json')).json();if(typeof data.key!=='string'||!/^[A-Za-z0-9+/]{43}=$/.test(data.key))throw Error('bad key');pairingKey=data.key;keyField.textContent=pairingKey;copyKeyButton.disabled=false;saveKeyButton.disabled=false}catch(e){if(e.status===403){keyField.textContent='Open BOOT setup to retrieve your key.';connect.disabled=true}else{keyField.textContent='Preparing your key…';setTimeout(loadKey,2500)}}}
+copyKeyButton.addEventListener('click',async()=>{if(!pairingKey)return;try{if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(pairingKey);else{const field=document.createElement('textarea');field.value=pairingKey;field.style.position='fixed';field.style.opacity='0';field.readOnly=true;document.body.append(field);field.focus();field.select();field.setSelectionRange(0,field.value.length);if(!document.execCommand('copy'))throw Error('copy');field.remove()}await confirmSavedKey();copyKeyButton.textContent='Copied'}catch(e){keyField.tabIndex=0;const range=document.createRange();range.selectNodeContents(keyField);getSelection().removeAllRanges();getSelection().addRange(range);document.getElementById('confirm-key').hidden=false;message('Copy the selected key, then tap I copied it. You can also save an image.',true)}});
+saveKeyButton.addEventListener('click',async()=>{if(!pairingKey)return;const canvas=document.createElement('canvas');canvas.width=1100;canvas.height=410;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,1100,410);ctx.fillStyle='#142B28';ctx.font='bold 52px system-ui';ctx.fillText('LabSense',60,92);ctx.fillStyle='#587166';ctx.font='31px system-ui';ctx.fillText('Home Assistant encryption key',60,155);ctx.fillStyle='#142B28';ctx.font='33px monospace';ctx.fillText(pairingKey.slice(0,22),60,250);ctx.fillText(pairingKey.slice(22),60,308);ctx.font='24px system-ui';ctx.fillStyle='#587166';ctx.fillText('Keep this image for Home Assistant pairing.',60,370);const link=document.createElement('a');link.download='labsense-pairing-key.png';link.href=canvas.toDataURL('image/png');document.body.append(link);link.click();link.remove();try{await confirmSavedKey()}catch(e){message('Key image created. Tap Save image again to confirm before connecting.',true)}});
+document.getElementById('confirm-key').addEventListener('click',async()=>{try{await confirmSavedKey();document.getElementById('confirm-key').hidden=true}catch(e){message('Could not confirm your key. Please try again.',true)}});
+network.addEventListener('change',selectionChanged);refresh.addEventListener('click',loadNetworks);
+show.addEventListener('click',()=>{const visible=password.type==='password';password.type=visible?'text':'password';show.textContent=visible?'Hide':'Show';show.setAttribute('aria-pressed',String(visible))});
+document.getElementById('setup').addEventListener('submit',async event=>{event.preventDefault();if(busy||connect.disabled)return;const name=network.value==='other'?ssidInput.value:(networks.get(network.value)||{}).ssid;if(!name||new TextEncoder().encode(name).length>32){message('Choose your Wi-Fi network.',true);return}const pass=password.disabled?'':password.value;if(pass&&(new TextEncoder().encode(pass).length<8||new TextEncoder().encode(pass).length>63)){message('Use a Wi-Fi password between 8 and 63 bytes.',true);return}busy=true;clearTimeout(scanRetry);connect.disabled=true;connect.textContent='Connecting…';message('');try{const params=new URLSearchParams({ssid:name,psk:password.disabled?'':password.value});await request('/wifisave',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','X-LabSense-Setup':'1'},body:params.toString()});message('Connecting…');setTimeout(async()=>{try{const data=await(await request('/config.json')).json();if(!Array.isArray(data.aps))throw Error('closed');message('Not connected yet. Check your password.',true)}catch(e){message('Settings sent. Reconnect your phone to home Wi-Fi and check for LabSense in Home Assistant.')}finally{busy=false;connect.disabled=false;connect.textContent='Connect'}},20000)}catch(e){message('Connection interrupted. Rejoin the setup Wi-Fi to try again.',true);busy=false;connect.disabled=false;connect.textContent='Connect'}});
+connect.disabled=true;loadKey();loadNetworks();loadOrientation();
+</script>
+</body>
+</html>

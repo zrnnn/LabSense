@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="820" viewBox="0 0 1100 820">
+<rect width="1100" height="820" fill="#F4F7F2"/>
+<style>text{font-family:DejaVu Sans,sans-serif;fill:#142B28}.title{font-size:28px;font-weight:bold}.sub{font-size:17px}.label{font-size:16px;font-weight:bold}.pin{font-size:13px;fill:white}</style>
+<text x="42" y="48" class="title">LabSense · module pin check</text>
+<text x="42" y="78" class="sub">Component side • USB to the right • orientation schematic, not to scale</text>
+<rect x="65" y="110" width="700" height="540" rx="34" fill="#142B28"/>
+<rect x="96" y="143" width="365" height="140" rx="8" fill="#40685B"/>
+<text x="112" y="220" class="label" style="fill:white">CCS811 · 8 pins</text>
+<circle cx="121" cy="171" r="5" fill="#50D6A0"/>
+<text x="106" y="158" class="pin">ADD</text>
+<circle cx="164" cy="171" r="5" fill="#50D6A0"/>
+<text x="149" y="158" class="pin">RST</text>
+<circle cx="207" cy="171" r="5" fill="#50D6A0"/>
+<text x="192" y="158" class="pin">INT</text>
+<circle cx="250" cy="171" r="5" fill="#50D6A0"/>
+<text x="235" y="158" class="pin">WAK</text>
+<circle cx="293" cy="171" r="5" fill="#50D6A0"/>
+<text x="278" y="158" class="pin">SDA</text>
+<circle cx="336" cy="171" r="5" fill="#50D6A0"/>
+<text x="321" y="158" class="pin">SCL</text>
+<circle cx="379" cy="171" r="5" fill="#50D6A0"/>
+<text x="364" y="158" class="pin">GND</text>
+<circle cx="422" cy="171" r="5" fill="#50D6A0"/>
+<text x="407" y="158" class="pin">VCC</text>
+<rect x="96" y="330" width="365" height="265" rx="8" fill="#416F60"/><rect x="118" y="366" width="321" height="153" rx="3" fill="#142B28"/>
+<text x="135" y="450" class="label" style="fill:white">OLED 128 × 64</text>
+<circle cx="212" cy="566" r="5" fill="#50D6A0"/>
+<text x="197" y="553" class="pin">SDA</text>
+<circle cx="255" cy="566" r="5" fill="#50D6A0"/>
+<text x="240" y="553" class="pin">SCL</text>
+<circle cx="298" cy="566" r="5" fill="#50D6A0"/>
+<text x="283" y="553" class="pin">VCC</text>
+<circle cx="341" cy="566" r="5" fill="#50D6A0"/>
+<text x="326" y="553" class="pin">GND</text>
+<rect x="497" y="180" width="223" height="160" rx="10" fill="#72887E"/>
+<text x="522" y="254" class="label">XIAO ESP32C3</text>
+<circle cx="511" cy="203" r="5" fill="#50D6A0"/>
+<text x="501" y="190" class="pin" style="font-size:10px">TX</text>
+<circle cx="542" cy="203" r="5" fill="#50D6A0"/>
+<text x="532" y="190" class="pin" style="font-size:10px">SCL</text>
+<circle cx="573" cy="203" r="5" fill="#50D6A0"/>
+<text x="563" y="190" class="pin" style="font-size:10px">SDA</text>
+<circle cx="604" cy="203" r="5" fill="#50D6A0"/>
+<text x="594" y="190" class="pin" style="font-size:10px">D3</text>
+<circle cx="635" cy="203" r="5" fill="#50D6A0"/>
+<text x="625" y="190" class="pin" style="font-size:10px">D2</text>
+<circle cx="666" cy="203" r="5" fill="#50D6A0"/>
+<text x="656" y="190" class="pin" style="font-size:10px">D1</text>
+<circle cx="697" cy="203" r="5" fill="#50D6A0"/>
+<text x="687" y="190" class="pin" style="font-size:10px">D0</text>
+<circle cx="511" cy="330" r="5" fill="#50D6A0"/>
+<text x="501" y="317" class="pin" style="font-size:10px">RX</text>
+<circle cx="542" cy="330" r="5" fill="#50D6A0"/>
+<text x="532" y="317" class="pin" style="font-size:10px">SCK</text>
+<circle cx="573" cy="330" r="5" fill="#50D6A0"/>
+<text x="563" y="317" class="pin" style="font-size:10px">MISO</text>
+<circle cx="604" cy="330" r="5" fill="#50D6A0"/>
+<text x="594" y="317" class="pin" style="font-size:10px">MOSI</text>
+<circle cx="635" cy="330" r="5" fill="#50D6A0"/>
+<text x="625" y="317" class="pin" style="font-size:10px">3V3</text>
+<circle cx="666" cy="330" r="5" fill="#50D6A0"/>
+<text x="656" y="317" class="pin" style="font-size:10px">GND</text>
+<circle cx="697" cy="330" r="5" fill="#50D6A0"/>
+<text x="687" y="317" class="pin" style="font-size:10px">5V</text>
+<rect x="705" y="235" width="83" height="57" rx="10" fill="#D0DBD3"/>
+<text x="733" y="270" class="label">USB</text>
+<rect x="500" y="437" width="185" height="171" rx="8" fill="#40685B"/>
+<text x="586" y="475" class="label" style="fill:white">BME280</text>
+<circle cx="520" cy="468" r="5" fill="#50D6A0"/>
+<text x="532" y="473" class="pin">VIN</text>
+<circle cx="520" cy="503" r="5" fill="#50D6A0"/>
+<text x="532" y="508" class="pin">GND</text>
+<circle cx="520" cy="538" r="5" fill="#50D6A0"/>
+<text x="532" y="543" class="pin">SCL</text>
+<circle cx="520" cy="573" r="5" fill="#50D6A0"/>
+<text x="532" y="578" class="pin">SDA</text>
+<text x="810" y="156" class="label">BUY BY SIGNAL ORDER</text>
+<text x="810" y="194" class="label">OLED</text>
+<text x="810" y="224" class="sub">GND → VCC → SCL → SDA</text>
+<text x="810" y="272" class="label">BME280</text>
+<text x="810" y="302" class="sub">VIN → GND → SCL → SDA</text>
+<text x="810" y="350" class="label">CCS811</text>
+<text x="810" y="380" class="sub">VCC GND SCL SDA</text>
+<text x="810" y="408" class="sub">WAK INT RST ADD</text>
+<text x="810" y="472" class="sub">All breakout supplies: 3.3 V</text>
+<text x="810" y="506" class="sub">SDA: D4 / GPIO6</text>
+<text x="810" y="536" class="sub">SCL: D5 / GPIO7</text>
+<text x="65" y="700" class="label">Before powering: compare the delivered board labels with the carrier.</text>
+<text x="65" y="735" class="sub">OLED versions with VCC–GND–SCL–SDA swap the power pins and do not fit electrically.</text>
+<text x="65" y="770" class="sub">Confirm body size, glass position and header height separately. Research: 16 October 2026.</text>
+</svg>

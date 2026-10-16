@@ -1,0 +1,14 @@
+ESPHome captive_portal, pinned to ESPHome 2026.9.1.
+Source: https://github.com/esphome/esphome/tree/2026.9.1/esphome/components/captive_portal
+The included upstream license applies to this derived component.
+LabSense modifications, 2026-10-16:
+- Minimal offline portal and no-store responses.
+- First-setup/physical-recovery pairing endpoint.
+- POST-only Wi-Fi writes with bounded input and no credential logging.
+- Removed automatic ota.web_server loading; encrypted ESPHome OTA only.
+- Runtime security checks use the release commissioning policy.
+- Full retained scan results, guarded POST scan endpoint, throttled main-loop scanning.
+- Scan completion listener, queued scan status, explicit matching-key acknowledgement before Wi-Fi writes.
+- Guarded display-orientation endpoint; queues persistent settings onto the main loop.
+Regenerate captive_index.h with tools/build_portal_assets.py.
+Re-audit these changes before changing the pinned ESPHome version.

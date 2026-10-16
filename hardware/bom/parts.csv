@@ -1,0 +1,14 @@
+item,quantity,description,part_number,supplier,source_url,pin_sequence_or_pitch,observed_unit_price,price_basis,compatibility_notes
+controller,1,Seeed XIAO ESP32C3,113991054 / SE-113991054,BerryBase,https://www.berrybase.de/seeed-xiao-esp32c3-winziges-mcu-board-mit-wlan-und-ble,2x7; 2.54 mm pitch; 15.24 mm row spacing,7.90,EUR including VAT,Exact controller model; socket stack must match
+voc,1,CCS811 eight-pin breakout,CJ-CCS811,BerryBase,https://www.berrybase.de/ccs811-luftqualitaets-sensor-mit-breakout-board,VCC GND SCL SDA WAK INT RST ADD,11.80,EUR including VAT,Supplier photo pin match; not fit-tested
+temperature_humidity,1,BME280-M four-pin breakout,100.390.68,HESTORE,https://www.hestore.eu/en/prod_10039068.html,VIN GND SCL SDA,5.008,EUR excluding VAT,Drawing pin match; not fit-tested; reject BMP280
+display,1,D096-12864-I2C-GV-WH SSD1306,100.483.04,HESTORE,https://www.hestore.eu/en/prod_10048304.html,GND VCC SCL SDA,2.576,EUR excluding VAT,Published pin match; glass position and body fit unverified
+carrier,1,LabSense carrier 55x50 mm 2-layer FR4 1.5 mm,Original Gerber ZIP,PCBWay,https://www.pcbway.com/QuickOrderOnline.aspx,See carrier Gerbers,,Quote required,Mask color freely selectable; confirm thickness
+male_headers,30,2.54 mm straight male contacts,2x7 + 1x8 + 2x4,Choice,,Match module sequence,,Allowance in pricing.json,Subtract included headers; allow cutting waste
+female_sockets,30,2.54 mm female socket contacts,2x7 + 1x8 + 2x4,Choice,,Match module sequence,,Allowance in pricing.json,Height must reproduce prototype stack
+enclosure,1,PETG base lid wall plate,Enclosure v3,Self print,,,,Allowance in pricing.json,0.4 mm nozzle; fit check pending
+case_screws,3,M3x12 cylinder or button head,Head max approx 6x3 mm,Choice,,,,Allowance in pricing.json,No countersunk heads
+usb_cable,1,USB-C cable; data capable for USB flashing,Suitable existing cable,Choice,,,,Optional allowance in pricing.json,Check plug body clearance
+usb_supply,1,Regulated 5 V USB supply,Suitable existing supply,Choice,,,,Optional allowance in pricing.json,USB only first iteration
+antenna,1,External adhesive antenna,Normally included with XIAO,Seeed retail kit,https://wiki.seeedstudio.com/XIAO_ESP32C3_Getting_Started/,,,Included if supplied,Check contents; case datum 40x20 mm foil with approx 60 mm lead
+wall_fixings,1,Wall screws and anchors or adhesive,Wall dependent,Choice,,,,Not priced,Optional; choose for wall material

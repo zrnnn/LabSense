@@ -1,0 +1,77 @@
+{
+  "checked_on": "2026-10-16",
+  "currency": "EUR",
+  "destination_vat_assumption": 0.19,
+  "delivery_included": false,
+  "observations": "Live supplier pages; cached HESTORE prices differed. Checkout determines destination tax. No PCB quote obtained.",
+  "electronics": [
+    {
+      "item": "controller",
+      "quantity": 1,
+      "observed_unit_price": 7.9,
+      "vat_included": true,
+      "source_url": "https://www.berrybase.de/seeed-xiao-esp32c3-winziges-mcu-board-mit-wlan-und-ble"
+    },
+    {
+      "item": "voc",
+      "quantity": 1,
+      "observed_unit_price": 11.8,
+      "vat_included": true,
+      "source_url": "https://www.berrybase.de/ccs811-luftqualitaets-sensor-mit-breakout-board"
+    },
+    {
+      "item": "temperature_humidity",
+      "quantity": 1,
+      "observed_unit_price": 5.008,
+      "vat_included": false,
+      "source_url": "https://www.hestore.eu/en/prod_10039068.html"
+    },
+    {
+      "item": "display",
+      "quantity": 1,
+      "observed_unit_price": 2.576,
+      "vat_included": false,
+      "source_url": "https://www.hestore.eu/en/prod_10048304.html"
+    }
+  ],
+  "electronics_total_including_assumed_vat": 28.73,
+  "planning_allowances": {
+    "headers_and_sockets": [
+      1,
+      2
+    ],
+    "case_screws": [
+      0.3,
+      1
+    ],
+    "printed_petg_material": [
+      1,
+      2
+    ],
+    "pcb_allocated_per_board": [
+      1,
+      3
+    ],
+    "pcb_whole_batch_production": [
+      5,
+      15
+    ],
+    "optional_usb_cable": [
+      3,
+      6
+    ],
+    "optional_usb_supply": [
+      5,
+      10
+    ]
+  },
+  "material_total_excluding_delivery_and_usb": [
+    32.03,
+    36.73
+  ],
+  "first_build_excluding_delivery_and_usb": [
+    36.03,
+    48.73
+  ],
+  "replacement_fit_status": "Pin layout researched; replacement modules not physically fit-tested; socket stack and OLED glass position require verification."
+}

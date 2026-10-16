@@ -1,0 +1,9 @@
+{
+  "source": "web/setup-release/index.html",
+  "source_bytes": 14149,
+  "gzip_bytes": 4838,
+  "sha256": "2d88f6e5a86e4bbfe1ad4d15eea7f75aea38b21c34c9e4b7cc9e6592550d3ccb",
+  "upstream": "ESPHome 2026.9.1",
+  "variant": "release",
+  "external_requests": false
+}
