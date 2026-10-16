@@ -1,4 +1,9 @@
-<p align="center"><img src="assets/brand/labsense-logo.svg" alt="LabSense" width="420"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/labsense-logo-light.svg">
+    <img src="assets/brand/labsense-logo.svg" alt="LabSense" width="420">
+  </picture>
+</p>
 <p align="center"><strong>Know your little lab.</strong></p>
 
 ![LabSense design illustration](docs/images/product/01-cover.png)
