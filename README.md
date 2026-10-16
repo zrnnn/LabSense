@@ -47,6 +47,6 @@ CCS811 gives a broad VOC estimate. It does not identify resin chemicals, measure
 
 ## Files and licenses
 
-Firmware source and the offline setup page are included so you can build and inspect the software. The original Gerber ZIP is the PCB manufacturing input. Enclosure CAD, meshes and print profiles are distributed **only on MakerWorld**; the model listing is awaiting publication.
+Firmware source and the offline setup page are included so you can build and inspect the software. The original Gerber ZIP is the PCB manufacturing input. Enclosure CAD, meshes and print profiles are distributed **only on MakerWorld**; get the [LabSense Original enclosure and print profile](https://makerworld.com/en/models/3449019-labsense-air-quality-climate-monitor).
 
 Original software: **MIT**. PCB design: **CERN-OHL-P-2.0**. Documentation and original illustrations: **CC BY 4.0**. Enclosure models: **MakerWorld Standard Digital File License**. See [license scopes](LICENSE.md), [third-party notices](THIRD_PARTY_NOTICES.md) and [security](SECURITY.md). Product sketches are design illustrations; example interface values are fictional. Real prototype photographs are identified in the build guide.
