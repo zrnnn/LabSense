@@ -1,5 +1,7 @@
 # Measurement behavior
 
+For an introduction to VOCs and printing-room use cases, read [Why LabSense](../why-labsense.md). The CCS811 output is an equivalent total VOC estimate, not identification of a chemical or a laboratory sum of all VOC concentrations.
+
 | Quantity | Source | Handling |
 | --- | --- | --- |
 | Temperature / relative humidity | BME280 | Update every ten seconds; used to compensate CCS811 |

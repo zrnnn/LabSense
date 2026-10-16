@@ -14,6 +14,8 @@ I built it for a room shared with 3D printers, resin work and other projects. It
 
 **Source version: 1.3.0-rc6 (release candidate).** Complete-device accuracy and alternative-module fit are not certified. This repository covers the **original XIAO ESP32C3 + CCS811 + BME280 device only**. Its case revision v3 and software version 1.3.x are not LabSense v2. Second-generation hardware is developed separately.
 
+**New to VOC sensing?** [Why LabSense, what VOC means and how to interpret its readings](docs/why-labsense.md) explains the workshop use cases and limits before you start building.
+
 ## Build your own
 
 | Start here | What it covers |

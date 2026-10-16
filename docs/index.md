@@ -4,6 +4,7 @@ This documentation covers the original USB-powered XIAO ESP32C3 / CCS811 / BME28
 
 | Task | Guide |
 | --- | --- |
+| Understand the purpose | [Why LabSense: VOCs, printing spaces and sensor limits](why-labsense.md) |
 | Build the device | [Illustrated assembly manual](assembly.md) |
 | Buy the right modules | [Parts, pin-layout checks and prices](sourcing.md) · [BOM](../hardware/bom/parts.csv) |
 | Order bare PCBs | [PCB ordering](pcb-ordering.md) · [Gerber ZIP](../hardware/pcb/source/LabSense-Original-Gerbers.zip) |

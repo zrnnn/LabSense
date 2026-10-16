@@ -2,6 +2,8 @@
 
 This guide follows the original **55 × 50 × 1.5 mm carrier**, socketed modules and USB-powered enclosure v3. Firmware is currently **1.3.0-rc6**, a release candidate with physical acceptance still in progress. No editable PCB schematic was supplied; pin connections are reconstructed from the original Gerbers and checked against the fitted prototype.
 
+New to room sensing? Read [why VOCs matter in printing spaces and what LabSense measures](why-labsense.md) first.
+
 **Build route:** [order the carrier](pcb-ordering.md) → [buy matching modules](sourcing.md) → check pins and heights → solder → check power → [install and connect](installation.md) → allow sensor conditioning → [close the enclosure](enclosure.md).
 
 ## 1. Order the bare PCB
